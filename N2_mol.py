@@ -44,9 +44,7 @@ psi_mps = h_obj.build_mps(bdims[0]);
 # do dmrg to find gd state vi MPE
 mpe_obj = MPE(psi_mps, h_mpo, psi_mps);
 dmrg_obj = mpe_obj.dmrg(bdims = bdims, noises = noises);
-                        
-######################################################################
-#### use dmrg to solve hubbard
+                    
 
 
 
