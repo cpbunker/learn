@@ -27,15 +27,17 @@ Specific problem:
 '''
 
 import utils
-import numbers
+import ops
+import fci_mod
 
+import numbers
 import numpy as np
 import scipy as sp
 from pyscf import fci
 from pyblock3 import fcidump, hamiltonian, algebra
 
 # top level inputs
-verbose = 2;
+verbose = 3;
 np.set_printoptions(suppress=True); # no sci notatation printing
 
 # system inputs
@@ -114,7 +116,7 @@ h1e_asu[2,2] = epsilon2;
 h1e_asu[3,3] = epsilon2;
 
 # 1 particle terms: hopping
-T = t/1e9 # break degeneracy to make wfs right
+T = 0.0 #t/1e9 # break degeneracy to make wfs right
 h1e_asu[0,2] = t+T;
 h1e_asu[2,0] = t+T;
 h1e_asu[1,3] = t-T;
@@ -132,19 +134,37 @@ cisolver_asu = fci.direct_spin1.FCI(); # doesn't matter if nosym or spin1
 # kernel takes (1e ham, 2e ham, num orbitals, num electrons
 # returns eigvals and eigvecs of ham (in what basis?)
 E_asu, v_asu = cisolver_asu.kernel(h1e_asu, g2e_asu, norbs, nelecs, nroots = nroots);
-spinexps = utils.Spin_exp(v_asu,norbs,nelecs); # evals <S> using fci vecs
 E_formatter = "{0:6.6f}"
 if(verbose):
+    
     print("\n2. All spin up formalism: nelecs = ",nelecs, " nroots = ",nroots);
-    for i, v in enumerate(v_asu):
-        Eform = E_formatter.format(E_asu[i]);
-        print("- E = ",Eform, ", <S> = ", spinexps[i],);
+
+    
+    # SCF
+    molo, scfo = fci_mod.arr_to_scf(h1e_asu, g2e_asu, norbs, nelecs);
+    E_scf, v_scf = fci_mod.scf_FCI(molo, scfo, nroots = nroots, verbose = verbose);
+                                   
+    # fnd Sx, Sz for each state
+    Sxop, Szop = ops.Sx([0,1,2,3],norbs), ops.Sz([0,1,2,3], norbs);
+    Sxeris, Szeris = ops.ERIs(Sxop, np.zeros((norbs,norbs,norbs,norbs)),scfo.mo_coeff), ops.ERIs(Szop, np.zeros((norbs,norbs,norbs,norbs)),scfo.mo_coeff);
+    sferis = ops.ERIs(np.zeros((norbs, norbs)), ops.spinflip([0,1,2,3],norbs), scfo.mo_coeff);
+
+    # info for each eigvec
+    for vi in range(len(v_scf)):
+        v = v_scf[vi]
+        ciobj = ops.CIObject(v, norbs, nelecs);
+        Eform = E_formatter.format(E_asu[vi]);
+        Sxval = ops.compute_energy( *ciobj.compute_rdm12(), Sxeris);
+        Szval = ops.compute_energy( *ciobj.compute_rdm12(), Szeris);
+        Concur = abs(ops.compute_energy( *ciobj.compute_rdm12(), sferis ));
+        print("- E = ",Eform, ", <Sx> = ",Sxval," <Sz> = ",Szval, " Concur = ",Concur );
         if(verbose > 2):
             print(v);
             
             
 ######################################################################
 #### use dmrg to solve hubbard
+assert(False);
 
 import os
 import pickle

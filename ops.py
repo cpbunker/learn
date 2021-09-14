@@ -27,6 +27,10 @@ pyscf/fci module:
 
 import numpy as np
 
+from pyscf import lib, fci, scf
+from pyscf.fci import direct_uhf
+einsum = lib.einsum
+
 #######################################################
 #### 1st part of siam hamiltonian array creation:
 #### create sep hams for leads, dot
@@ -288,6 +292,32 @@ def h_dot_2e(U,N):
     return h; # end h dot 2e
 
 
+def spinflip(site_i, norbs):
+    '''
+    define the "spin flip operator \sigma_y x \sigma_y for two qubits
+    abs val of exp of spin flip operator gives concurrence
+    '''
+
+    # check inputs
+    assert( isinstance(site_i, list) or isinstance(site_i, np.ndarray));
+    assert( len(site_i) == 4); # concurrence def'd for 2 qubits
+
+    # create op array (2 body!)
+    sf = np.zeros((norbs,norbs, norbs, norbs));
+    sf[site_i[0],site_i[0]+3,site_i[0]+2,site_i[0]+1] += -1;
+    sf[site_i[0],site_i[0]+2,site_i[0]+1,site_i[0]+3] += 1;
+    sf[site_i[0]+1,site_i[0]+3,site_i[0]+2,site_i[0]] += 1;
+    sf[site_i[0]+1,site_i[0]+2,site_i[0]+3,site_i[0]] += -1;
+
+    # (pq|rs) = (qp|sr) switch particle labels
+    sf[site_i[0]+3,site_i[0],site_i[0]+1,site_i[0]+2] += -1;
+    sf[site_i[0]+2,site_i[0],site_i[0]+3,site_i[0]+1,] += 1;
+    sf[site_i[0]+3,site_i[0]+1,site_i[0],site_i[0]+2] += 1;
+    sf[site_i[0]+2,site_i[0]+1,site_i[0],site_i[0]+3,] += -1;
+
+    return sf;
+
+
 
 #######################################################
 #### 2nd part of siam hamiltonian array creation:
@@ -486,6 +516,115 @@ def dot_hams(nleads, nsites, nelecs, physical_params, Rlead_pol=0, verbose = 0):
     h2e = stitch_h2e(hd2e, nleads, verbose = verbose);
 
     return h1e, h2e, input_str; #end dot hams
+
+#####################################
+#### from ruojing
+
+def compute_energy(d1, d2, eris, time=None):
+    '''
+    Ruojing's code
+    Computes <H> by
+        1) getting h1e, h2e from eris object
+        2) contracting with density matrix
+    I overload this function by passing it eris w/ arb op x stored
+    then ruojings code gets <x> for any eris operator x
+    Args:
+    d1, d2, 1 and 2 particle density matrices
+    eris, object which contains hamiltonians
+    '''
+
+    h1e_a, h1e_b = eris.h1e
+    g2e_aa, g2e_ab, g2e_bb = eris.g2e
+    h1e_a = np.array(h1e_a,dtype=complex)
+    h1e_b = np.array(h1e_b,dtype=complex)
+    g2e_aa = np.array(g2e_aa,dtype=complex)
+    g2e_ab = np.array(g2e_ab,dtype=complex)
+    g2e_bb = np.array(g2e_bb,dtype=complex)
+    d1a, d1b = d1
+    d2aa, d2ab, d2bb = d2
+    # to physicts notation
+    g2e_aa = g2e_aa.transpose(0,2,1,3)
+    g2e_ab = g2e_ab.transpose(0,2,1,3)
+    g2e_bb = g2e_bb.transpose(0,2,1,3)
+    d2aa = d2aa.transpose(0,2,1,3)
+    d2ab = d2ab.transpose(0,2,1,3)
+    d2bb = d2bb.transpose(0,2,1,3)
+    # antisymmetrize integral
+    g2e_aa -= g2e_aa.transpose(1,0,2,3)
+    g2e_bb -= g2e_bb.transpose(1,0,2,3)
+
+    e  = einsum('pq,qp',h1e_a,d1a)
+    e += einsum('PQ,QP',h1e_b,d1b)
+    e += 0.25 * einsum('pqrs,rspq',g2e_aa,d2aa)
+    e += 0.25 * einsum('PQRS,RSPQ',g2e_bb,d2bb)
+    e +=        einsum('pQrS,rSpQ',g2e_ab,d2ab)
+    return e
+
+
+class ERIs():
+    def __init__(self, h1e, g2e, mo_coeff):
+        ''' SIAM-like model Hamiltonian
+            h1e: 1-elec Hamiltonian in site basis 
+            g2e: 2-elec Hamiltonian in site basis
+                 chemists notation (pr|qs)=<pq|rs>
+            mo_coeff: moa, mob 
+        '''
+        moa, mob = mo_coeff
+        
+        h1e_a = einsum('uv,up,vq->pq',h1e,moa,moa)
+        h1e_b = einsum('uv,up,vq->pq',h1e,mob,mob)
+        g2e_aa = einsum('uvxy,up,vr->prxy',g2e,moa,moa)
+        g2e_aa = einsum('prxy,xq,ys->prqs',g2e_aa,moa,moa)
+        g2e_ab = einsum('uvxy,up,vr->prxy',g2e,moa,moa)
+        g2e_ab = einsum('prxy,xq,ys->prqs',g2e_ab,mob,mob)
+        g2e_bb = einsum('uvxy,up,vr->prxy',g2e,mob,mob)
+        g2e_bb = einsum('prxy,xq,ys->prqs',g2e_bb,mob,mob)
+
+        self.mo_coeff = mo_coeff
+        self.h1e = h1e_a, h1e_b
+        self.g2e = g2e_aa, g2e_ab, g2e_bb
+        
+
+class CIObject():
+    def __init__(self, fcivec, norb, nelec):
+        '''
+           fcivec: ground state uhf fcivec
+           norb: size of site basis
+           nelec: nea, neb
+        '''
+        self.r = fcivec.copy() # ie r is the state in slater det basis
+        self.i = np.zeros_like(fcivec)
+        self.norb = norb
+        self.nelec = nelec
+
+    def compute_rdm1(self):
+        rr = direct_uhf.make_rdm1s(self.r, self.norb, self.nelec) # tuple of 1 particle density matrices for alpha, beta spin. self.r is fcivec
+        # dm1_alpha_pq = <a_p alpha ^dagger a_q alpha
+        ii = direct_uhf.make_rdm1s(self.i, self.norb, self.nelec)
+        ri = direct_uhf.trans_rdm1s(self.r, self.i, self.norb, self.nelec) # tuple of transition density matrices for alpha, beta spin. 1st arg is a bra and 2nd arg is a ket
+        d1a = rr[0] + ii[0] + 1j*(ri[0]-ri[0].T)
+        d1b = rr[1] + ii[1] + 1j*(ri[1]-ri[1].T)
+        return d1a, d1b
+
+    def compute_rdm12(self):
+        # 1pdm[q,p] = \langle p^\dagger q\rangle
+        # 2pdm[p,r,q,s] = \langle p^\dagger q^\dagger s r\rangle
+        rr1, rr2 = direct_uhf.make_rdm12s(self.r, self.norb, self.nelec)
+        ii1, ii2 = direct_uhf.make_rdm12s(self.i, self.norb, self.nelec)
+        ri1, ri2 = direct_uhf.trans_rdm12s(self.r, self.i, self.norb, self.nelec)
+        # make_rdm12s returns (d1a, d1b), (d2aa, d2ab, d2bb)
+        # trans_rdm12s returns (d1a, d1b), (d2aa, d2ab, d2ba, d2bb)
+        d1a = rr1[0] + ii1[0] + 1j*(ri1[0]-ri1[0].T)
+        d1b = rr1[1] + ii1[1] + 1j*(ri1[1]-ri1[1].T)
+        d2aa = rr2[0] + ii2[0] + 1j*(ri2[0]-ri2[0].transpose(1,0,3,2))
+        d2ab = rr2[1] + ii2[1] + 1j*(ri2[1]-ri2[2].transpose(3,2,1,0))
+        d2bb = rr2[2] + ii2[2] + 1j*(ri2[3]-ri2[3].transpose(1,0,3,2))
+        # 2pdm[r,p,s,q] = \langle p^\dagger q^\dagger s r\rangle
+        d2aa = d2aa.transpose(1,0,3,2) 
+        d2ab = d2ab.transpose(1,0,3,2)
+        d2bb = d2bb.transpose(1,0,3,2)
+        return (d1a, d1b), (d2aa, d2ab, d2bb)
+
     
 #####################################
 #### exec code
