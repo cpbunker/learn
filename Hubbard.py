@@ -32,7 +32,7 @@ import fci_mod
 
 import numbers
 import numpy as np
-import scipy as sp
+import matplotlib.pyplot as plt
 from pyscf import fci
 from pyblock3 import fcidump, hamiltonian, algebra
 
@@ -44,20 +44,38 @@ np.set_printoptions(suppress=True); # no sci notatation printing
 # hamiltonian params must be floats
 epsilon1 = 0.0; # on site energy, site 1
 epsilon2 = 0.0; # site 2
-t = 3.0 # hopping
-U = 100.0 # hubbard repulsion strength
-if(verbose):
-    print("\nInputs:\nepsilon1 = ",epsilon1,"\nepsilon2 = ",epsilon2,"\nt = ",t,"\nU = ",U);
+t = 1.0 # hopping
+#U = 100.0 # hubbard repulsion strength
+#if(verbose): print("\nInputs:\nepsilon1 = ",epsilon1,"\nepsilon2 = ",epsilon2,"\nt = ",t,"\nU = ",U);
+
+Uvals = np.array(range(21))
+Evals = np.zeros((len(Uvals),6));
+for Ui in range(len(Uvals)):
+
+    U = Uvals[Ui];
     
-# analytical solution by exact diag
-H_exact = np.array([[U+2*epsilon1,0,-t,t],[0,U+2*epsilon2,t,-t],[-t,t,epsilon1+epsilon2,0],[t,-t,0,epsilon1+epsilon2]]);
-E_exact = np.linalg.eigh(H_exact)[0];
-E_exact = np.append(E_exact, [epsilon1 + epsilon2, epsilon1 + epsilon2])
-E_exact.sort();
-if(verbose):
-    print("\n0. Analytical solution");
-    print("Exact energies = ", E_exact);
-    
+    # analytical solution by exact diag
+    H_exact = np.array([[epsilon1+epsilon2,0, -t, -t], # |up> |down>
+                        [0,epsilon1+epsilon2, t, t], # |down> |up>
+                        [-t, t,U/2+2*epsilon1, 0],  #|up down> |>
+                        [-t, t, 0, U/2+2*epsilon2]]); # |> |up down>
+    E_exact = np.linalg.eigh(H_exact)[0];
+    E_exact = np.append(E_exact, [epsilon1 + epsilon2, epsilon1 + epsilon2]);
+    E_exact.sort();
+    Evals[Ui,:] = E_exact;
+
+fig, ax = plt.subplots();
+for bandi in range(6): #len(H_exact)):
+    ax.plot(Uvals, Evals[:,bandi]);
+    ax.axhline(Evals[0,bandi], color = "black", linestyle = "dashed");
+
+ax.set_xlim(min(Uvals),max(Uvals));
+ax.set_xlabel("$U/t$", fontsize = "x-large");
+ax.set_ylabel("$E$", fontsize = "x-large");
+plt.show();
+
+
+assert False;
 
 ######################################################################
 #### use conventional (sum over spin) method to solve hubbard
