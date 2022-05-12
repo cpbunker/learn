@@ -1,7 +1,7 @@
 '''
 https://github.com/cpbunker/learn/leet
 
-Leetcode practice
+1. Two Sum
 '''
 
 import time

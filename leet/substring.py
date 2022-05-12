@@ -1,7 +1,7 @@
 '''
 https://github.com/cpbunker/learn/leet
 
-Leetcode practice
+3. Longest Substring Without Repeating
 '''
 
 import time
