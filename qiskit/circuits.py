@@ -7,7 +7,7 @@ from qiskit.quantum_info import Statevector
 from qiskit import QuantumCircuit
 
 import matplotlib.pyplot as plt
-#plt.rcParams.update({"text.usetex": True,"font.family": "Times"})
+plt.rcParams.update({"text.usetex": True,"font.family": "Times"})
 from qiskit.visualization import plot_bloch_multivector
 
 # define the register
