@@ -4,10 +4,10 @@ https://github.com/cpbunker/learn/qiskit
 https://learn.qiskit.org/course/introduction/the-atoms-of-computation
 '''
 
-from pickle import FALSE
+import utils
+
 import qiskit
 from qiskit import QuantumCircuit;
-from qiskit.providers.aer import AerSimulator
 
 ##################################################################################
 # circuits for simple tasks
@@ -57,25 +57,11 @@ def half_adder(n1: int, n2: int) -> int:
     qc.compose(halfadder, qubits = list(range(len(halfadder.qubits))), clbits = list(range(len(halfadder.clbits))), inplace = True);
 
     return qc;
-    
-
-##################################################################################
-# utils
-
-def output(qc: QuantumCircuit) -> None:
-    assert(isinstance(qc, QuantumCircuit))
-
-    # display the circuit
-    print(qc.draw(output = "text"));
-
-    # simulate the circuit
-    job = AerSimulator().run(qc); # physically runs the qc
-    jobd = job.result(); # results of simulation stored in dictionary
-    print("Out >> ",jobd.get_counts()); 
 
 ##################################################################################
 # run code
-bits = (1,1);
-myqc = half_adder(*bits);
-print("In >> ", bits);
-output(myqc);
+if(__name__ == '__main__'):
+    bits = (1,0);
+    myqc = half_adder(*bits);
+    print("In >> ", bits);
+    utils.output(myqc);
