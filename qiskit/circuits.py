@@ -2,10 +2,12 @@
 https://github.com/cpbunker/learn/qiskit
 '''
 
+# qiskit
 import qiskit
-from qiskit.quantum_info import Statevector
 from qiskit import QuantumCircuit
+from qiskit.quantum_info import Statevector
 
+# visualization
 import matplotlib.pyplot as plt
 plt.rcParams.update({"text.usetex": True,"font.family": "Times"})
 from qiskit.visualization import plot_bloch_multivector
