@@ -39,7 +39,7 @@ def get_imbalance(state):
             
         # add in weighted imbalance
         basis_coef = statedict[basis_key]
-        imbalance_val += basis_coef*basis_coef*basis_imbalance;
+        imbalance_val += basis_coef*np.conj(basis_coef)*basis_imbalance;
         
         # debug
         #print('>> ', basis_key, basis_coef*basis_coef, basis_imbalance)
