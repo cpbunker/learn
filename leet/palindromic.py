@@ -6,44 +6,83 @@ https://github.com/cpbunker/learn/leet
 
 import time
 
-def solution(s: str, method = 'brute') -> str:
+def solution(s: str, method = 'brute', comp = False) -> str:
     '''
     Given string s, find the longest interior palindrome, case-sensitive
     longest is not unique, in case of ties use first occuring
     '''
 
-    def is_palindrome(subs: str) -> bool:
-
-        # front of string
-        front = subs[:len(subs)//2];
-
-        # back of string, reversed
-        back = subs[::-1][:len(subs)//2];
-
-        return(front == back);
-            
-
     if(method == 'brute'):
 
+        # complexity info
+        n_subs = 0;
+        n_checks = 0;
+
         # default answer is first char
-        default = s[0];
+        sol = s[0];
 
         # iter over longer
+        for starti in range(len(s)):
+            for stopi in range(starti+len(sol)+1,len(s)+1): # only check longer
+                sub = s[starti:stopi]; # sub will cover all longer substrings
+                
+                # reassign sol if needed
+                if(is_palindromic(sub)): # check palindrome status
+                    sol = sub;
 
-        return default;
+                # complexity info
+                n_subs += 1;
+                n_checks += 1;
+        if(comp): print(len(s)," "*(10-len(str(len(s)))), len(sub)," "*(10-len(str(len(sub)))),n_subs," "*((10-len(str(n_subs)))),n_checks);   
+                    
+        return sol;
 
-    if(method == 'fast'):
-        return;
+    elif(method == 'fast'):
 
+        # complexity info
+        n_subs = 0;
+        n_checks = 0;
+
+        # default answer is first char
+        sol = s[0];
+
+        # iter over longer
+        for starti in range(len(s)):
+            for stopi in range(starti+1,min(starti + 3, len(s))): # 2-3 char sub
+                sub = s[starti:stopi+1]; # +1 bc indices are always inclusive
+                print(starti, stopi, sub)
+                n_subs += 1;
+                n_checks += 1;
+                
+                # check palindrome 
+                if(sub[0] == sub[-1]):
+                    newstarti, newstopi = starti-1, stopi+1; # recall indices should still be inclusive
+
+                    # keep expanding while still a palindrome and still in string
+                    while( newstarti >= 0 and newstopi < len(s) and s[newstarti] == s[newstopi]): 
+                        sub = s[newstarti:newstopi+1];
+                        print("->", newstarti, newstopi, sub)
+                        newstarti -= 1;
+                        newstopi += 1;
+                        n_checks += 1;
+
+                    # reassign sol if needed
+                    if(len(sub) > len(sol)):
+                        sol = sub;
+
+        # complexity info
+        #if(comp): print(len(s)," "*(10-len(str(len(s)))), len(sub)," "*(10-len(str(len(sub)))),n_subs," "*((10-len(str(n_subs)))),n_checks);
+        
+        return sol;
 
 # test
-s = "civilizationivbeyondthesword";
-s = "babad"
-start = time.time();
-pal = solution(s);
-stop = time.time();
-print("Solution = ",pal);
-print("Time = ", stop - start);
+tries = ['aba7','9racecare9','civil','cbbd','bbbbbbb8'];
+print("len(try)"," "*(2), "len(sub)"," "*(2),"n_subs"," "*(4),"n_checks");
+print("-"*50);
+for tri in tries:
+    my = solution(tri, method = 'fast', comp = True);
+    print(tri, ' -> ',my)
+    
 
 
 
