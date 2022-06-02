@@ -12,6 +12,32 @@ from qiskit.quantum_info import Statevector
 # backend
 from qiskit.providers.aer import AerSimulator
 
+#### type conversions
+
+def str_to_circuit(s: str, clbits = False) -> QuantumCircuit:
+    '''
+    Given a bit string s, creates a circuit which prepares that state
+
+    clbits: whether to include a clbit for each qubit or not
+    '''
+    for c in s: assert(c in ['0','1']);
+
+    # quantum circuit
+    if(clbits):
+        qc = QuantumCircuit(len(s), len(s));
+    else:
+        qc = QuantumCircuit(len(s));
+
+    # flip 1s
+    s = s[::-1]; # reverse bc of qiskit convention
+    for ci in range(len(s)):
+        if(s[ci] == '1'):
+            qc.x(ci);
+
+    return qc;           
+        
+
+#### misc
 
 def basis_strings(n: int) -> list:
     '''
@@ -33,21 +59,6 @@ def basis_strings(n: int) -> list:
         b_strings[i] = bit;
 
     return list(b_strings);   
-
-def output(qc: QuantumCircuit) -> None:
-    '''
-    Outputs helpful information about the quantum circuit
-    '''
-    assert(isinstance(qc, QuantumCircuit));
-
-    # display the circuit
-    print(qc.draw(output = "text"));
-
-    # simulate the circuit
-    if(len(qc.clbits)):
-        job = AerSimulator().run(qc); # physically runs the qc
-        jobd = job.result(); # results of simulation stored in dictionary
-        print("Out >> ",jobd.get_counts());
 
 
 def basis_op(qc: QuantumCircuit) -> None:
