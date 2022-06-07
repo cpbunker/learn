@@ -4,17 +4,21 @@ https://github.com/cpbunker/learn/qiskit
 
 import numpy as np
 
-# qiskit
 import qiskit
 from qiskit import QuantumCircuit
-from qiskit.quantum_info import Statevector
-
-# backend
-from qiskit.providers.aer import AerSimulator
+import qiskit.quantum_info as qi
 
 #### type conversions
 
-def str_to_circuit(s: str, clbits = False) -> QuantumCircuit:
+def int_to_str(n: int) -> str:
+    '''
+    convert a decimal integer to a bitstring
+    '''
+    assert(isinstance(n, int));
+
+    return bin(n)[2:];
+
+def str_to_qc(s: str, clbits = False) -> QuantumCircuit:
     '''
     Given a bit string s, creates a circuit which prepares that state
 
@@ -34,6 +38,7 @@ def str_to_circuit(s: str, clbits = False) -> QuantumCircuit:
         if(s[ci] == '1'):
             qc.x(ci);
 
+    qc.barrier();
     return qc;           
         
 
@@ -72,7 +77,7 @@ def basis_op(qc: QuantumCircuit) -> None:
     # iter thru basis in decimal
     for i in range(2**len(qc.qubits)):
 
-        state = Statevector.from_int(i, 2**len(qc.qubits));
+        state = qi.Statevector.from_int(i, 2**len(qc.qubits));
         print("\n - ",state,"\n    ->",state.evolve(qc));
         
                 

@@ -9,30 +9,6 @@ import utils
 import qiskit
 from qiskit import QuantumCircuit;
 
-##################################################################################
-# circuits for simple tasks
-
-def prep_number(n: int) -> QuantumCircuit:
-    '''
-    Takes a decimal number and represents it as binary quantum circuit
-    '''
-    assert(isinstance(n,int));
-
-    # convert to binary string
-    n = bin(n)[2:]; # removes the 0b prefix
-
-    # circuit size based on number of bits
-    nbits = len(n);
-    qc = QuantumCircuit(nbits, nbits);
-
-    # prep state
-    # remember qiskit qubits are numbered from last to first
-    for biti in range(nbits):
-        if(n[biti] == '1'):
-            qc.x(nbits - (1+biti));
-
-    return qc;
-
 
 def half_adder(n1: int, n2: int) -> int:
     '''
@@ -41,8 +17,8 @@ def half_adder(n1: int, n2: int) -> int:
     assert(n1 in [0,1] and n2 in [0,1]);
 
     # first bit of each number is input to halfadder
-    input = int(str(n1) + str(n2), 2); # in binary !
-    input_circ = prep_number(int(input));
+    input_str = str(n1) + str(n2)
+    input_circ = utils.str_to_qc(input_str);
 
     # half adder circuit
     halfadder = QuantumCircuit(4,2);
@@ -64,4 +40,4 @@ if(__name__ == '__main__'):
     bits = (1,0);
     myqc = half_adder(*bits);
     print("In >> ", bits);
-    utils.output(myqc);
+    print(myqc.draw());

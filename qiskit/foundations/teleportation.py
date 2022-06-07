@@ -44,11 +44,11 @@ def qc_teleport() -> QuantumCircuit:
 
 # prep state 001
 state0_str = '001';
-myqc = utils.str_to_circuit(state0_str, clbits = True);
+myqc = utils.str_to_qc(state0_str, clbits = True);
 print(myqc.draw());
 
 # teleport q0 -> q2, st 001 -> 100
-myqc.append(qc_teleport(), qargs = [0,1,2], cargs = [0,1,2]);
+myqc.compose(qc_teleport(), qubits = [0,1,2], clbits = [0,1,2], inplace = True);
 print(myqc.draw());
 
 # verify

@@ -53,7 +53,7 @@ def bloch_state(state: qi.Statevector, vec0: str, vec1: str) -> None:
 
 #### circuit visualization
 
-def circuit_counts(qc: QuantumCircuit) -> None:
+def circuit_counts(qc: QuantumCircuit, shots = 1024) -> None:
     '''
     Do a quantum simulation of myqc and plot histogram of the results
 
@@ -72,7 +72,7 @@ def circuit_counts(qc: QuantumCircuit) -> None:
     # run the job
     if True:
         mybackend = Aer.get_backend('qasm_simulator');
-        result = qiskit.execute(qc, backend = mybackend).result();
+        result = qiskit.execute(qc, backend = mybackend, shots = shots).result();
         counts = result.get_counts();
 
     else:
@@ -81,7 +81,7 @@ def circuit_counts(qc: QuantumCircuit) -> None:
 
     # show
     plot_histogram(counts);
-    plt.show()
+    plt.show();
     return None;
 
 
