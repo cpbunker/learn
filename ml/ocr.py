@@ -4,7 +4,7 @@ Linkedin learning: training neural networks in python
 Demonstrate user defined neural network objects by building an
 Optical Character Recognition (OCR) network
 '''
-from objects import *
+from net import *
 import numpy as np
 
 # construct ocr

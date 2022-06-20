@@ -3,7 +3,7 @@ Linkedin learning: training neural networks in python
 
 Test user defined neural network objects by building logic gates
 '''
-from objects import *
+from net import *
 import numpy as np
 import itertools
 
