@@ -71,8 +71,8 @@ def climbingLeaderboard(ranked, player, method = 'brute'):
         raise NotImplementedError;
 
 
-    
 ####
+# test code
 
 rs = [100, 90, 90, 80, 75, 60];
 ps = [0, 65, 77, 90, 100];
